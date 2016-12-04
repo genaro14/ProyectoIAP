@@ -17,8 +17,8 @@ Interface
  type
    	TPuntero = ^TNodo; {Puntero a un nodo de la lista.}
    	TInfo= record {Tipo de la informacion que va a contener la lista.}
-			caracter:integer; /// CAMBIAR A CARACTER/// 
-	        numero : integer;
+			caracter:Char;
+	        visible : Boolean;
            end;
  	TNodo = record {Representa un nodo de la lista.}  
              info: TInfo; 
@@ -175,11 +175,11 @@ end;
 {Inicializa la Lista como vacia.}
 procedure Inicializar( var l : Lista );
 begin
- ;  //NO usa elemento ficticio //
+   //NO usa elemento ficticio //
     l.Pri := nil;
     l.Ult := l.Pri ;
     l.cant := 0; 
-    Writeln('Lista inicializada');
+    //Writeln('Lista inicializada');
 end;
 
 {Modifica el elemento que esta en un Puntero.}
