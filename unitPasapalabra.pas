@@ -66,13 +66,13 @@ Procedure MostrarUsuarios(Var archivo : Tarch );
 //Contar la cantidad de registros con un nombre de usuario dado.
 Function CantRegistros(entrada : Tusuario; Var archivo :  Tarch): Tranking;
 //Calcula el promedio de las partidas jugadas del usuario, recursivamente
-Function VerMiPromedio (entrada: Tranking; Var sum: integer; Var i : Integer) : Real;
+Function SumaProm (entrada: Tranking; Var sum: integer; Var i : Integer) : Real;
 //Obtiene, ordena y muestra top 10 de puntajes
 Procedure VerMejoresPuntajes (Var archivo : Tarch);
 //Funcion que dada una palabra te devuelve la misma cargada en una lista simplemente encadenada de caracteres
 Procedure CargarArchivoReg(var arch: TarchPal; var archPal:Text);
 //Funcion que dada una palabra te devuelve la misma cargada en una lista simplemente encadenada de caracteres
-Function CargarPalabraEnLista(palabra : String ): Lista;
+Procedure CargarPalabraEnLista(palabra : String; Var salida : Lista);
 //Muestra las palabras que estan cargadas en el archivo de registro
 Procedure MostrarPalabras(var arch: TarchPal);
 //Muestra palabra a jugar 
@@ -120,7 +120,6 @@ Begin
         readkey;
         halt; //Si no hay lista de palabras no se puede jugar
     End
-     
     Else Begin
         assign(archRegPal,nombreRegPal);
         {$I-}
@@ -151,9 +150,9 @@ End;
 //Accion de crear usuario
 Procedure CrearUsuario (Var  archivo : Tarch; Var salida : Tusuario);
 Var
-    NombreU:string;
+    NombreU : string;
     user : Tusuario;
-    encontrado :Boolean;
+    encontrado : Boolean;
 Begin 
     encontrado := False;
     {$I-} 
@@ -164,29 +163,26 @@ Begin
     End 
     Else
         Write('ingrese nombre : '); 
-        Readln(nombreU); //Busqueda MI
-        While (Not EOF(archivo)) Do Begin //Mientras no fin sec
-            Read (archivo,user); //Obtengo elem
-            Repeat
-                If ( nombreU = user.nombreUs ) Then Begin //Tratamiento
+        Readln(nombreU); //Esquema: Busqueda (mejorada). Modelo: MI
+        While ((Not EOF(archivo))and ( Not encontrado)) Do Begin //Mientras no fin sec
+            Read (archivo,user); //Obtengo sig. elem
+                If ( nombreU = user.nombreUs ) Then Begin //Tratamiento elem. corriente
                     Writeln('Usuario ya existe'); 
-                    encontrado:=true; 
-                    Writeln('ingrese otro');
-                    readln(nombreU);
-                End
-                Else
-                    encontrado := False;
-                    Until(Not encontrado);
+                    encontrado := True;
                 End;
+        End;//Fin while
                 Close(archivo); // cierra archivo
-                If (Not encontrado ) Then Begin; 
+                If (Not encontrado) Then Begin
                     user.nombreUs := nombreU;
                     user.puntaje := 0;
                     Writeln('Usuario creado'); 
                     Writeln('volviendo menu'); 
                     salida := user;
-    End;
-
+                End
+                Else Begin
+                    Writeln('Por favor cambie de nombre y reingrese');
+                End;
+  
 End;
 //Cambia de usuario activo
 Procedure CambiarUsuario (Var  archivo : Tarch; Var salida : Tusuario);
@@ -204,19 +200,19 @@ Begin
     If IORESULT <> 0 Then Begin
       Writeln('Error');
     End
-    Else Begin
-        While (Not (eof(archivo))) And Not (encontrado ) Do Begin //busco si existe usuario
-            Read(archivo, usuBuscado); // Avance en el archivo
-            If (usuBuscado.nombreUs = nombre) Then Begin
+    Else Begin      //Esquema: Busqueda. Modelo: MI
+        While (Not (eof(archivo))) And Not (encontrado ) Do Begin //No fin de sec. y p(n).
+            Read(archivo, usuBuscado); // Obtengo Sig. Elem.
+            If (usuBuscado.nombreUs = nombre) Then Begin// Tratamiento elem. corriente.
                 encontrado := True;
             End;
         End;                    
-    If (encontrado) Then Begin
+    If (encontrado) Then Begin //Tratamiento elem. hallado.
         Writeln('Cambio de usuario exitoso');
         salida := usuBuscado;
     End
     Else
-        Begin 
+        Begin //Tratamiento elem.no hallado.
             Writeln('No se encontro el usuario, primero debe crear un nuevo usuario');    
             Writeln('Use el menu Crear usuario');    
         End;
@@ -232,13 +228,13 @@ Begin
     Reset(archivo); //Abre archivo
     {$I+} 
     if (ioresult<>0) then Begin 
-        Writeln('Error en el archivo'); //revisar
+        Writeln('Error en el archivo');
     End
-    Else Begin
-        While (Not EOF(archivo)) Do Begin
-        Read(archivo,aux);  //
-        Writeln(aux.nombreUs); // Trat corriente
-        Writeln(aux.puntaje); // Trat corriente
+    Else Begin //Esquema: R1. Modelo: MI.
+        While (Not EOF(archivo)) Do Begin//No fin de sec.
+        Read(archivo,aux);  // Obtengo sig. elem.
+        Writeln(aux.nombreUs); // Trat. corriente
+        Writeln(aux.puntaje); // Trat. corriente
     End;
     close(archivo);
     End;
@@ -250,17 +246,17 @@ Var
     cont : Integer;
     salida : Tranking;
 Begin 
-    cont := 0;
+    cont := 0; //Inic. adquisicion.
     {$I-} 
     Reset(archivo); //Abre archivo
     {$I+} 
     If (ioresult<>0) then Begin 
       Writeln('Error en el archivo'); //revisar
     End
-    Else Begin
-        While (Not EOF(archivo)) Do Begin
-            Read(archivo,aux);  //
-            If ((aux.nombreUs = entrada.nombreUs) and (aux.puntaje > 0)) Then Begin
+    Else Begin //Esquema: R1. Modelo: MI
+        While (Not EOF(archivo)) Do Begin//No fin de sec.
+            Read(archivo,aux);  //Obtengo sig. elem.
+            If ((aux.nombreUs = entrada.nombreUs) and (aux.puntaje > 0)) Then Begin//Tratamiento elem. corriente.
                   cont := cont +1;
                   salida.a[cont].puntaje := aux.puntaje;
             End;
@@ -274,20 +270,17 @@ End;
 
 
 //Calcula el promedio de las partidas jugadas del usuario, recursivamente
-Function VerMiPromedio (entrada: Tranking; Var sum: integer; Var i : Integer) : Real;
-
+Function SumaProm (entrada: Tranking; Var sum: integer; Var i : Integer) : Real;
 Begin
   If (i = 0) Then Begin
-    VerMiPromedio := 0 + sum/entrada.cant;
+    SumaProm := sum;
   End
-  {If (entrada.cant = 1) Then Begin
-    VerMiPromedio :=  entrada.a[entrada.cant].puntaje/entrada.cant; 
-  End} 
+  
   Else Begin
   if (i >=1) Then begin
       sum := entrada.a[i].puntaje +  sum;
-      i := i-1; //
-      VerMiPromedio := VerMiPromedio(entrada, sum ,i );
+      i := i-1;
+      SumaProm := SumaProm(entrada, sum ,i );
     End
   End;      
 End;
@@ -298,6 +291,7 @@ Var
   aux: Tusuario;
   user : Tusuario;
   b : Tranking;
+  cont : integer;
   //a : array[1 ..255] of Tusuario;
 Begin
   {$I-} 
@@ -316,8 +310,10 @@ Begin
       p := p+1;
     End;//fin while
     close(archivo); //Cierro archivo
+    cont := 0;
     i := p;
-    While (i >= 1) Do Begin        {ordeno los puntajes}
+    While ((i >= 1)and (cont <= 10)) Do Begin //Una vez que el i llega a 10 corta el ciclo, es decir que ya obtuvo los 10 mejores
+                                                {ordeno los puntajes}
       j := 1;
       While (j<i) Do Begin
         If (b.a[j].puntaje > b.a[j+1].puntaje) Then Begin 
@@ -327,14 +323,15 @@ Begin
         End;
       j := j+1;
       End;
+        cont := cont+1;
         i := i-1;
     End;{fin while}
      b.cant := p;         
     //Muestra de datos
-    If (b.cant>=10) Then Begin// Si hay mas de 9
+    If (b.cant >= 10) Then Begin// Si hay mas de 9
       Writeln('Los 10 mejores puntajes son :'); {muestro los 10 mejores puntajes}
       i := p;
-      While (b.cant>=i-10) Do Begin
+      While (b.cant >= i-10) Do Begin
         Writeln( b.a[i].nombreUs, ' : -->  ');
         Write(b.a[i].puntaje, ' puntos');
         Writeln(' ');
@@ -359,7 +356,6 @@ Begin
   readkey;
   clrscr;
 End;//fin accion
-
 //Carga en archivo de registro las palabras del texto
 Procedure CargarArchivoReg(var arch: TarchPal; var archPal:Text);
 Var
@@ -373,15 +369,14 @@ begin
   reset (archPal);
   reset (arch);
   i:=0;
-  caracterInit:='a';
-  while(not(EOF(archPal))) do
-  begin
-      read(archPal,pal);
-      regDePal.palabra := CargarPalabraEnLista(pal);
+  caracterInit:='a';//Esquema: R1. Modelo: MI
+  while(not(EOF(archPal))) Do Begin//No fin de sec.
+      read(archPal,pal);//Obtengo sig elem.
+      CargarPalabraEnLista(pal,regDePal.palabra);
       if(i<5) then //Son cinco palabras entonces a las primeras cinco les asigna la letra 'a'
         begin
           regDePal.letra:=caracterInit;
-          write(arch,regDePal);
+          write(arch,regDePal);           //Trat. elem. corriente.
           i:=i+1;
         end
       else
@@ -397,7 +392,7 @@ close(archPal);
 close(arch);
 end;
 //Funcion que dada una palabra te devuelve la misma cargada en una lista simplemente encadenada de caracteres
-Function CargarPalabraEnLista(palabra : String ): Lista;
+Procedure CargarPalabraEnLista(palabra : String; Var salida : Lista);
 Var
 mInfo : TInfo;
 miLista : Lista;
@@ -413,7 +408,7 @@ inicializar(miLista);
                 mInfo.visible:=true;
                 InsertarAlFinal(mInfo,miLista);
             end;
-        CargarPalabraEnLista:=miLista;
+        salida:=miLista;
 end;
 //Accion de juego
 
@@ -430,10 +425,10 @@ Begin
                 reset(arch)
         else
                 writeln('error en el archivo');
-    while(not(EOF(arch))) do
-    begin
-            read(arch,regDePal);
-            lista1 := regDePal.palabra;
+    //Esquema: R1. Modelo: MI
+    While(not(EOF(arch))) Do Begin//No fin de sec.
+            read(arch,regDePal);//Obtengo seg. elem.
+            lista1 := regDePal.palabra;//Tratamineto elem. corrien.
             Writeln(' ');
             MuestraPal(lista1);
             writeln(' ');
@@ -445,7 +440,7 @@ end;
 Procedure MuestraPal(entrada : Lista );
   Var
     corriente : Tpuntero;
-  Begin   //R1 MF
+  Begin   //Esquema: R1. Modelo: MF
     corriente := entrada.Pri;
     Write ('Palabra: ---->   ');
     While (corriente <> nil ) Do Begin //Mientras no fin sec
@@ -457,28 +452,27 @@ Procedure MuestraPal(entrada : Lista );
       Else
         Begin
           Write('_'); 
-                            //Trat del e corriente 
+                            //Trat. de elem. corriente
         End;
           
-      corriente := (corriente^).next;     //Obtener sig
+      corriente := (corriente^).next;     //Obtener sig elem.
           
     End;
-  End;
+End;
  //Retorna una lista de 26 elementos aleatorios cada v.
  Function Aleatoria(v : Integer): Taleatorio;
     Var
       i,variable, indice : Integer;
       lista : Taleatorio;
     Begin
-      //Lista de nÃºmeros aleatorios
+      //Lista de números aleatorios
       //inicilizar semilla en el programa principal
       variable := 0;  
-      i := 0;
-      While (i <= 25)
-      Do begin
-        i := i+1;
+      i := 0;//Esquema: R1. Modelo: MI
+      While (i <= 25)Do Begin//No fin de sec.
+        i := i+1;//Obteger sig. elem.
         indice := (Random(v)+ variable);
-        lista[i] := indice;
+        lista[i] := indice; //Tratamiento elem. corriente
         variable := variable+v;
         write(' - ',indice);
       End;
@@ -494,8 +488,8 @@ Var
     corriente : Tpuntero;
 
 Begin
-    i := 1;
-  While (i<=26) Do Begin
+    i := 1;//Esquema: R1. Modelo: MF
+  While (i<=26) Do Begin //No fin de sec.
     contador := 0;
     a := entrada[i].letra;
     list := entrada[i].palabra;
@@ -509,20 +503,20 @@ Begin
       mostrada := True;
       End
  
-      Else Begin// Si no es igual o ya se mostrÃ³
+      Else Begin// Si no es igual o ya se mostró
         If ((anteriorMostrada) and (contador<2)) Then Begin
         (corriente^).info.visible := False;  //Se oculta y se almacena la info
         anteriorMostrada := False;
         contador := contador + 1;
         End
-        Else Begin // Si  se mostrÃ³ la anterior,oculta la actual
+        Else Begin // Si  se mostró la anterior, oculta la actual
         (corriente^).info.visible := True;
         anteriorMostrada := True;
         End;
       End;
       corriente := (corriente^).next;
   End;
-i:=i+1;
+i:=i+1; //Obtener sig. elem.
 End;
 End;
 
@@ -535,8 +529,8 @@ Var
     corriente : Tpuntero;
 
 Begin
-    i := 1;
-  While (i<=26) Do Begin
+    i := 1;//Esquema: R1. Modelo: MF
+  While (i<=26) Do Begin//No fin de sec.
     a := entrada[i].letra;
     list := entrada[i].palabra;
     mostrada := False;
@@ -549,20 +543,20 @@ Begin
       mostrada := True;
       End
  
-      Else Begin// Si no es igual o ya se mostrÃ³
+      Else Begin// Si no es igual o ya se mostro
         If (anteriorMostrada) Then Begin
         (corriente^).info.visible := False;  //Se oculta y se almacena la info
         anteriorMostrada := False;
         
         End
-        Else Begin // Si  se mostrÃ³ la anterior,oculta la actual
+        Else Begin // Si se mostro la anterior, oculta la actual
         (corriente^).info.visible := True;
         anteriorMostrada := True;
         End;
       End;
       corriente := (corriente^).next;
     End;
-    i:=i+1;
+    i:=i+1;//Obtener sig. elem.
   End;
 End;
 
@@ -659,12 +653,12 @@ Begin
   Writeln('-------- Adivinar palabra:--------');
   Writeln('      --- Ingrese palabra: ---');
   readln(pal);
-  listaComp := CargarPalabraEnLista(pal) ;
+  CargarPalabraEnLista(pal, listaComp) ;
   corrienteComp := listaComp.Pri ;
 
-    
-    While ((corriente <> nil) and (corrienteComp <> nil) and(iguales)) Do Begin
-          If ( (corriente^).info.caracter <> (corrienteComp^).info.caracter ) Then Begin
+    //Esquema: busqueda mejorado. Modelo MF
+    While ((corriente <> nil) and (corrienteComp <> nil) and(iguales)) Do Begin //No fin de sec. y p(n).
+          If ( (corriente^).info.caracter <> (corrienteComp^).info.caracter ) Then Begin //Trat. elem. corriente.
             iguales:= False;  
           End;
           corriente := (corriente^).next; 
@@ -689,10 +683,8 @@ Begin
           clrscr;
       End;
       entrada[i].valor := False;
-      i := i + 1;
+      i := i + 1;//Obtengo sig. elemento.
         
-    
-   
 End;
 //Calcula puntaje partida
 Function CalcPuntaje(entrada : Integer; ronda: integer): integer;
@@ -781,7 +773,7 @@ Procedure EscribePunt(Var archivo1 : Tarch ; jugador : Tusuario);
   If (ioresult<>0) then Begin 
     Write('Error en el archivo');
   End 
-  Else Begin
+  Else Begin// Esquema: R1. Modelo: MI
     While not Eof (archivo1) do begin
       Read (archivo1, usLocal);
     End;
@@ -813,12 +805,12 @@ Begin
     juegoFacil(palabras); // JUEGO FACIL
     While ((k <= 2) and ( salida)) Do Begin
     q :=1;
-      While ((q<=26) and ( salida)) Do Begin 
+      While ((q<=m) and ( salida)) Do Begin 
            
-           Writeln('--------------------------------PASAPALABRA-----------------------------------');
-           Writeln('Puntaje: ',puntos );
+          
            If (palabras[q].valor) Then Begin
-
+	      Writeln('--------------------------------PASAPALABRA-----------------------------------');
+	      Writeln('Puntaje: ',puntos );	
               MuestraPal(palabras[q].palabra);
               Writeln(' ');
               Menujuego(q,puntos,contPP,palabras,k,salida,palCont);
@@ -838,10 +830,11 @@ Begin
   Else Begin
     juegoDif(palabras); //JUEGO DIFICIL
       While ((k <= 2) and ( salida)) Do Begin
-          While ((q<=26) and ( salida)) Do Begin
-             Writeln('--------------------------------PASAPALABRA-----------------------------------');
-             Writeln('Puntaje: ',puntos );
+          While ((q<=m) and ( salida)) Do Begin
+             
               If (palabras[q].valor) Then Begin
+	     Writeln('--------------------------------PASAPALABRA-----------------------------------');
+             Writeln('Puntaje: ',puntos );
 
               MuestraPal(palabras[q].palabra);
               Writeln(' ');
@@ -857,16 +850,17 @@ Begin
   End;
    
   End;
-    If ((q = 4) and (k =3 ) ) Then Begin //Si la partida se completa escribe  en el archivo una entrada
+    If ((q = m+1) and (k =3 ) ) Then Begin //Si la partida se completa escribe  en el archivo una entrada
      If (puntos > 0 ) Then Begin
       user.puntaje:= puntos;
+      clrscr;
       TextColor(Red);
       Writeln('------------------------- JUEGO TERMINADO-------------------- ');
       TextColor(White);
       Writeln('*                       Jugador: ',user.nombreUs);
       Writeln('*                       Puntaje: ', user.puntaje);
       Writeln('*                       Palabras Acertadas: ', palCont);
-      Writeln('*                     Palabras No Acertadas: ', 26-palCont);
+      Writeln('*                     Palabras No Acertadas: ', m-palCont);
       Writeln('------------------------------------------------------------- ');
       Writeln('Presiona cualquier tecla para volver al menu');
       readkey;

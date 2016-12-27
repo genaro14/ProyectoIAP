@@ -89,9 +89,9 @@ Procedure CargaMenu( Var user : Tusuario);
 				sal1 := CantRegistros(jugador, archivoUs);
 				h := sal1.cant;
 				If (h > 0) Then Begin
-					promedio := VerMiPromedio(sal1,sum, h);
+					promedio := SumaProm(sal1,sum, h)/sal1.cant;
 					Writeln('El promedio de sus puntajes es: ');
-					Write(promedio:2:1);
+					Write(promedio:2:2);
 				End
 				Else Begin
 					Writeln('No tiene juegos registrados');
